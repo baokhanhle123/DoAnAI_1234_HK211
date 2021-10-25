@@ -1,3 +1,4 @@
+import copy
 import math
 import random
 import numpy as np
@@ -242,11 +243,13 @@ def nextState(gameState):
     legalActions = LegalAction(posPlayer, gameState)
     randomAction = legalActions[random.randrange(len(legalActions))]
     action = randomAction[2];
-    UpdateShowState(gameState, action)
-    return gameState
+    copyGameState = copy.deepcopy(gameState)
+    UpdateShowState(copyGameState, action)
+    return copyGameState
 
 def calculateEnergy(gameState):
     n = len(gameState[0])
+    #energy = n*(2*n - 2) - heuristic2(gameState)
     energy = n*n - heuristic(gameState)
     return energy
 
@@ -269,15 +272,15 @@ def solvePuzzle(gameState, calculateE):
         # accept next state?
         if deltaE > 0:
             oldGameState = newGameState
-        elif probability > random.uniform(0, 1):
-            oldGameState = newGameState
+        #elif probability > random.uniform(0, 1):
+            #oldGameState = newGameState
 
         # decrease temperature
         if T >= 0.01:
             T *= decreaseFactor
 
         # print gameState
-        print(newGameState)
+        print(oldGameState)
         #time.sleep(1)
 
 
