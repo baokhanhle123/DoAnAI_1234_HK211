@@ -8,7 +8,6 @@ import tkinter as tk
 
 decreaseFactor = 0.99
 
-
 '''
 def randominput(n):
     test = []
@@ -19,6 +18,14 @@ def randominput(n):
 
     return np.array(test).reshape(n, n)  # chuyen thanh ma tran 5*5
 '''
+
+
+def proper_shuffle(state, n):
+    for i in range(n):
+        m = random.choice(all_moves(state))
+        # print all_moves(state), m
+        # print_puzzle(state)
+        do_move(state, m)
 
 
 def Custominput(test, n):
@@ -119,8 +126,13 @@ def heuristic2(gameState):
     for x1 in range(n):
         for y1 in range(n):
             x2, y2 = index(gameState[x1][y1], n)
-            sum = abs(x1 - x2) + abs(y1 - y2)
+            sum += abs(x1 - x2) + abs(y1 - y2)
     return sum
+
+
+def heuristic3(gameState):
+    return heuristic(gameState) + heuristic2(gameState)
+
 
 """hien thi"""
 
@@ -174,10 +186,6 @@ def show(gameState):
         showgamestate[x].grid(row=x1, column=y1)
 
 
-def CalculateInitialSigma():
-    return
-
-
 def nextState(gameState):
     n = len(gameState[0])
     posPlayer = PosOfPlayer(gameState)
@@ -194,11 +202,12 @@ def nextState(gameState):
 def solved(state):
     return heuristic(state) == 0
 
-
-def calculateEnergy(gameState):
-    n = len(gameState[0])
-    # energy = n*(2*n - 2) - heuristic2(gameState)
-    energy = n * n - heuristic(gameState)
+# The energy of a state
+# energy(solution) = 0.
+def energy(gameState):
+    #energy = heuristic(gameState)
+    #energy = heuristic2(gameState)
+    energy = heuristic3(gameState)
     return energy
 
 
@@ -235,7 +244,7 @@ def sim_annealing(initial_state, max_moves, p=1):
     # Note that I'm only renaming the initial state:
     state = initial_state
     temperature = max_moves
-    oldE = calculateEnergy(state)
+    oldE = energy(state)
     while not solved(state) and temperature > 0:
         moves = all_moves(state)
         accepted = False
@@ -246,7 +255,7 @@ def sim_annealing(initial_state, max_moves, p=1):
             # has a function choice:
             m = random.choice(moves)
             do_move(state, m)
-            newE = calculateEnergy(state)
+            newE = energy(state)
             deltaE = newE - oldE
             if deltaE <= 0:
                 accepted = True
@@ -262,7 +271,41 @@ def sim_annealing(initial_state, max_moves, p=1):
         temperature = temperature - 1
         print("Moving", m)
         print(state)
-        print("Energy: ", calculateEnergy(state))
+
+
+def sim_annealing2(initial_state, max_moves, p=1):
+    print("Starting from:")
+    print(initial_state)
+    # Note that I'm only renaming the initial state:
+    state = initial_state
+    temperature = max_moves
+    oldE = energy(state)
+    while not solved(state) and temperature > 0:
+        moves = all_moves(state)
+        accepted = False
+        while not accepted:
+            # Normally we'd generate a random number between 0 and the
+            # size of the array all_moves -1 and then make m =
+            # all_moves of that index. But the random module already
+            # has a function choice:
+            m = random.choice(moves)
+            do_move(state, m)
+            newE = energy(state)
+            deltaE = newE - oldE
+            if deltaE <= 0:
+                accepted = True
+            else:
+                boltz = math.exp(-float(p * deltaE) / temperature)
+                # A random float between 0 and 1:
+                r = np.random.uniform(1, 0, 1)
+                if r <= boltz:
+                    accepted = True
+            if not accepted:
+                undo_move(state, m)
+        oldE = newE
+        temperature = temperature - 1
+        print("Moving", m)
+        print(state)
 
 
 def solvePuzzle(gameState, calculateE):
@@ -282,7 +325,7 @@ def solvePuzzle(gameState, calculateE):
 
         probability = math.exp(deltaE / T)
         # accept next state?
-        if deltaE > 0:
+        if deltaE < 0:
             oldGameState = newGameState
         elif probability > np.random.uniform(1, 0, 1):
             oldGameState = newGameState
@@ -300,15 +343,15 @@ def solvePuzzle(gameState, calculateE):
 # gameState1=Custominput(test1,4)
 
 
-#test2 = [0, 2, 1, 7, 4, 5, 6, 3, 8]
-test2 = [1, 2, 3, 4, 5, 6, 7, 0, 8]
+#test2 = [4, 6, 5, 7, 2, 0, 1, 3, 8]
+test2 = [1, 2, 3, 4, 5, 6, 7, 8, 0]
 gameState1 = Custominput(test2, 3)
+proper_shuffle(gameState1, 40)
 print(gameState1)
-# print(heuristic((gameState1)))
+print(heuristic(gameState1))
 # print(PosOfPlayer(gameState1))
-print(calculateEnergy(gameState1))
-print(solved(gameState1))
+# print(energy(gameState1))
 show(gameState1)
-sim_annealing(gameState1, 10000, 0.01)
-# solvePuzzle(gameState1, calculateEnergy)
+sim_annealing2(gameState1, 100, 0.01)
+# solvePuzzle(gameState1, energy)
 top.mainloop()
