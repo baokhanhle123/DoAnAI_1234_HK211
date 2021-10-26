@@ -9,22 +9,6 @@ import tkinter as tk
 decreaseFactor = 0.99
 
 
-class PriorityQueue:  # hang doi uu tien hien thuc bang haepq
-    def __init__(self):
-        self._data = []
-        self._index = 0
-        self.count = 0
-
-    def push(self, item, priority):
-        heapq.heappush(self._data, (priority, self._index, item))
-        self._index += 1
-        self.count += 1
-
-    def pop(self):
-        self.count -= 1
-        return heapq.heappop(self._data)[-1]
-
-
 '''
 def randominput(n):
     test = []
@@ -138,47 +122,6 @@ def heuristic2(gameState):
             sum = abs(x1 - x2) + abs(y1 - y2)
     return sum
 
-
-def astar(gameState):
-    n = len(gameState[0])
-    posPlayer = PosOfPlayer(gameState)
-    StartState = (posPlayer, gameState)
-
-    frontier = PriorityQueue()
-    frontier.push([StartState], heuristic(gameState))
-
-    actions = PriorityQueue()
-    actions.push([0], heuristic(gameState))
-    exploredSet = np.zeros((1, n, n), dtype=int)
-    b = Endstate(gameState)
-    count = 0
-    while frontier:
-        node = frontier.pop()
-        # print(node,1)
-        # print(exploredSet)
-        node_action = actions.pop()
-        count += 1
-        # print(1)
-        # print(len(node_action))
-        if CheckEnd(node[0][1], b):
-            # print(','.join(node_action[1:]).replace(',',''))
-            print(len(node_action), count)
-            print(node_action)
-            break
-        if check(node[0][1], exploredSet):
-            exploredSet = np.concatenate((exploredSet, [node[0][1]]))
-
-            # cost=len(node_action)
-
-            # print(exploredSet)
-            for action in LegalAction(node[0][0], node[0][1]):
-                newPosPlayer, newState = UpdateState(node[0][0], node[0][1], action)
-                heur = heuristic(newState)
-                frontier.push([(newPosPlayer, newState)], heur)
-                actions.push(node_action + [action[-1]], heur)
-    return node_action
-
-
 """hien thi"""
 
 
@@ -247,16 +190,85 @@ def nextState(gameState):
     UpdateShowState(copyGameState, action)
     return copyGameState
 
+
+def solved(state):
+    return heuristic(state) == 0
+
+
 def calculateEnergy(gameState):
     n = len(gameState[0])
-    #energy = n*(2*n - 2) - heuristic2(gameState)
-    energy = n*n - heuristic(gameState)
+    # energy = n*(2*n - 2) - heuristic2(gameState)
+    energy = n * n - heuristic(gameState)
     return energy
+
+
+def all_moves(gameState):
+    n = len(gameState[0])
+    posPlayer = PosOfPlayer(gameState)
+    # StartState = (posPlayer, gameState)
+
+    legalActions = LegalAction(posPlayer, gameState)
+    moves = []
+    for action in legalActions:
+        moves.append(action[2])
+    return moves
+
+
+def do_move(gameState, move):
+    UpdateShowState(gameState, move)
+
+
+def undo_move(gameState, move):
+    if move == 'u':
+        do_move(gameState, 'd')
+    if move == 'd':
+        do_move(gameState, 'u')
+    if move == 'l':
+        do_move(gameState, 'r')
+    if move == 'r':
+        do_move(gameState, 'l')
+
+
+def sim_annealing(initial_state, max_moves, p=1):
+    print("Starting from:")
+    print(initial_state)
+    # Note that I'm only renaming the initial state:
+    state = initial_state
+    temperature = max_moves
+    oldE = calculateEnergy(state)
+    while not solved(state) and temperature > 0:
+        moves = all_moves(state)
+        accepted = False
+        while not accepted:
+            # Normally we'd generate a random number between 0 and the
+            # size of the array all_moves -1 and then make m =
+            # all_moves of that index. But the random module already
+            # has a function choice:
+            m = random.choice(moves)
+            do_move(state, m)
+            newE = calculateEnergy(state)
+            deltaE = newE - oldE
+            if deltaE <= 0:
+                accepted = True
+            else:
+                boltz = math.exp(-float(p * deltaE) / temperature)
+                # A random float between 0 and 1:
+                r = np.random.uniform(1, 0, 1)
+                if r <= boltz:
+                    accepted = True
+            if not accepted:
+                undo_move(state, m)
+        oldE = newE
+        temperature = temperature - 1
+        print("Moving", m)
+        print(state)
+        print("Energy: ", calculateEnergy(state))
+
 
 def solvePuzzle(gameState, calculateE):
     solutionFound = False
     N = 10000
-    T = 10
+    T = 2.2
     oldGameState = gameState
     # sigma = CalculateInitialSigma()
     for i in range(0, N):
@@ -272,8 +284,8 @@ def solvePuzzle(gameState, calculateE):
         # accept next state?
         if deltaE > 0:
             oldGameState = newGameState
-        #elif probability > random.uniform(0, 1):
-            #oldGameState = newGameState
+        elif probability > np.random.uniform(1, 0, 1):
+            oldGameState = newGameState
 
         # decrease temperature
         if T >= 0.01:
@@ -281,21 +293,22 @@ def solvePuzzle(gameState, calculateE):
 
         # print gameState
         print(oldGameState)
-        #time.sleep(1)
+        # time.sleep(1)
 
 
 # test1 = [1, 2, 3, 4, 5, 6, 7, 10, 12, 0, 8, 15, 14, 11, 9, 13]
 # gameState1=Custominput(test1,4)
 
 
-# test2 = [0, 2, 1, 7, 4, 5, 6, 3, 8]
-test2 = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+#test2 = [0, 2, 1, 7, 4, 5, 6, 3, 8]
+test2 = [1, 2, 3, 4, 5, 6, 7, 0, 8]
 gameState1 = Custominput(test2, 3)
-test3 = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-gameState2 = Custominput(test3, 3)
 print(gameState1)
-print(heuristic((gameState1)))
-#print(heuristic((gameState2)))
+# print(heuristic((gameState1)))
+# print(PosOfPlayer(gameState1))
+print(calculateEnergy(gameState1))
+print(solved(gameState1))
 show(gameState1)
-solvePuzzle(gameState1, calculateEnergy)
+sim_annealing(gameState1, 10000, 0.01)
+# solvePuzzle(gameState1, calculateEnergy)
 top.mainloop()
