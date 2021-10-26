@@ -278,65 +278,54 @@ def sim_annealing2(initial_state, max_moves, p=1):
     print(initial_state)
     # Note that I'm only renaming the initial state:
     state = initial_state
-    temperature = max_moves
-    oldE = energy(state)
-    while not solved(state) and temperature > 0:
-        moves = all_moves(state)
+    while not solved(state):
+        decreaseFactor = 0.99
+        stuckCount = 0
+        temperature = max_moves
+        oldE = energy(state)
         accepted = False
+        if oldE <= 0:
+            accepted = True
+
         while not accepted:
-            # Normally we'd generate a random number between 0 and the
-            # size of the array all_moves -1 and then make m =
-            # all_moves of that index. But the random module already
-            # has a function choice:
-            m = random.choice(moves)
-            do_move(state, m)
-            newE = energy(state)
-            deltaE = newE - oldE
-            if deltaE <= 0:
-                accepted = True
-            else:
-                boltz = math.exp(-float(p * deltaE) / temperature)
-                # A random float between 0 and 1:
-                r = np.random.uniform(1, 0, 1)
-                if r <= boltz:
+            previousE = oldE
+            for i in range(0, max_moves):
+                moves = all_moves(state)
+                m = random.choice(moves)
+                do_move(state, m)
+                newE = energy(state)
+                deltaE = newE - oldE
+                if deltaE <= 0:
                     accepted = True
-            if not accepted:
-                undo_move(state, m)
-        oldE = newE
-        temperature = temperature - 1
-        print("Moving", m)
-        print(state)
+                else:
+                    boltz = math.exp(-float(p * deltaE) / temperature)
+                    # A random float between 0 and 1:
+                    r = np.random.uniform(1, 0, 1)
+                    if r <= boltz:
+                        accepted = True
+                    if not accepted:
+                        undo_move(state, m)
+                oldE = newE
+                print(oldE)
+                if oldE <= 0:
+                    accepted =True
+                    break
 
+            temperature = temperature - 1
+            if oldE <= 0:
+                accepted = True
+                break
+            if oldE >= previousE:
+                stuckCount += 1
+            else:
+                stuckCount = 0
+            if stuckCount > 80:
+                temperature += 2
+            if solved(state):
+                print(state)
+                break
 
-def solvePuzzle(gameState, calculateE):
-    solutionFound = False
-    N = 10000
-    T = 2.2
-    oldGameState = gameState
-    # sigma = CalculateInitialSigma()
-    for i in range(0, N):
-        # check
-
-        # calculate
-        Eold = calculateE(oldGameState)
-        newGameState = nextState(oldGameState)
-        Enew = calculateE(newGameState)
-        deltaE = Enew - Eold
-
-        probability = math.exp(deltaE / T)
-        # accept next state?
-        if deltaE < 0:
-            oldGameState = newGameState
-        elif probability > np.random.uniform(1, 0, 1):
-            oldGameState = newGameState
-
-        # decrease temperature
-        if T >= 0.01:
-            T *= decreaseFactor
-
-        # print gameState
-        print(oldGameState)
-        # time.sleep(1)
+    print(state)
 
 
 # test1 = [1, 2, 3, 4, 5, 6, 7, 10, 12, 0, 8, 15, 14, 11, 9, 13]
@@ -346,7 +335,7 @@ def solvePuzzle(gameState, calculateE):
 #test2 = [4, 6, 5, 7, 2, 0, 1, 3, 8]
 test2 = [1, 2, 3, 4, 5, 6, 7, 8, 0]
 gameState1 = Custominput(test2, 3)
-proper_shuffle(gameState1, 40)
+proper_shuffle(gameState1, 20)
 print(gameState1)
 print(heuristic(gameState1))
 # print(PosOfPlayer(gameState1))
