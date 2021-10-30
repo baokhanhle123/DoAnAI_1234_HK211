@@ -375,10 +375,56 @@ def sim_annealing2(initial_state, intial_temperature, p=1):
         print("Moving", m)
         print(state)
 
+def make_move(state, temperature, p):
+    oldE = energy(state)
+    moves = all_moves(state)
+    accepted = False
+    stuckCount = 0
+    # Make a move
+    while not accepted:
+        # avoid stuck
+        stuckCount += 1
+        if stuckCount >= 5:
+            temperature += 2
+        # move randomly
+        m = random.choice(moves)
+        do_move(state, m)
+        # accept move?
+        newE = energy(state)
+        deltaE = newE - oldE
+        if deltaE <= 0:
+            accepted = True
+        else:
+            boltz = math.exp(-float(p * deltaE) / temperature)
+            # A random float between 0 and 1:
+            r = np.random.uniform(1, 0, 1)
+            if r <= boltz:
+                accepted = True
+        # not accept + undo
+        if not accepted:
+            undo_move(state, m)
+
+    return temperature, m
+
+def sim_annealing3(initial_state, intial_temperature, p=1):
+    print("Starting from:")
+    print(initial_state)
+    # rename the initial state:
+    state = initial_state
+    temperature = intial_temperature
+    while not solved(state) and temperature > 0:
+        # Make a move
+        temperature, m = make_move(state, temperature, p)
+
+        temperature = temperature - 1
+        if temperature <= 0:
+            temperature += 2
+        print("Moving", m)
+        print(state)
+
 
 # test1 = [1, 2, 3, 4, 5, 6, 7, 10, 12, 0, 8, 15, 14, 11, 9, 13]
 # gameState1=Custominput(test1,4)
-
 
 # test2 = [4, 6, 5, 7, 2, 0, 1, 3, 8]
 test2 = [1, 2, 3, 4, 5, 6, 7, 8, 0]
@@ -389,6 +435,6 @@ print(heuristic(gameState1))
 # print(PosOfPlayer(gameState1))
 # print(energy(gameState1))
 show(gameState1)
-sim_annealing2(gameState1, 100, 0.01)
+sim_annealing3(gameState1, 100, 0.01)
 # solvePuzzle(gameState1, energy)
 top.mainloop()
