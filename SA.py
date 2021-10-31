@@ -419,8 +419,26 @@ def sim_annealing3(initial_state, intial_temperature, p=1):
         temperature = temperature - 1
         if temperature <= 0:
             temperature += 2
-        print("Moving", m)
-        print(state)
+        #print("Moving", m)
+        #print(state)
+        #print(energy(state))
+
+def sim_annealing4(initial_state, intial_temperature, p=1):
+    print("Starting from:")
+    print(initial_state)
+    # rename the initial state:
+    state = initial_state
+    temperature = intial_temperature
+    while not solved(state) and temperature > 0:
+        # Make a move
+        temperature, m = make_move(state, temperature, p)
+
+        temperature = temperature * 0.99
+        if temperature <= 0:
+            temperature += 2
+        #print("Moving", m)
+        #print(state)
+        #print(energy(state))
 
 
 # test1 = [1, 2, 3, 4, 5, 6, 7, 10, 12, 0, 8, 15, 14, 11, 9, 13]
@@ -429,12 +447,22 @@ def sim_annealing3(initial_state, intial_temperature, p=1):
 # test2 = [4, 6, 5, 7, 2, 0, 1, 3, 8]
 test2 = [1, 2, 3, 4, 5, 6, 7, 8, 0]
 gameState1 = Custominput(test2, 3)
-proper_shuffle(gameState1, 20)
+proper_shuffle(gameState1, 10)
+gameState2 = copy.deepcopy(gameState1)
+
 print(gameState1)
 print(heuristic(gameState1))
 # print(PosOfPlayer(gameState1))
 # print(energy(gameState1))
 show(gameState1)
+
+start = time.time()
 sim_annealing3(gameState1, 100, 0.01)
-# solvePuzzle(gameState1, energy)
+end = time.time()
+print(end - start)
+
+start = time.time()
+sim_annealing4(gameState2, 100, 0.01)
+end = time.time()
+print(end - start)
 top.mainloop()
