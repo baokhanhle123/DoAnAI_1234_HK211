@@ -2,7 +2,6 @@ import copy
 import math
 import random
 import numpy as np
-import heapq
 import time
 import tkinter as tk
 
@@ -166,26 +165,6 @@ def indexshow(m, n):
     return x, y
 
 
-top = tk.Tk()
-top.title('xep hinhf')
-
-
-def show(gameState):
-    n = len(gameState[0])
-    b = gameState.reshape(n * n)
-    showgamestate = []
-    for x in range(n * n):
-        if b[x] != 0:
-            value = b[x]
-        else:
-            value = ""
-        a0 = tk.Button(text=value, font=("Helvetica", 20,), height=3, width=7)
-        showgamestate.append(a0)
-    for x in range(n * n):
-        x1, y1 = indexshow(x, n)
-        showgamestate[x].grid(row=x1, column=y1)
-
-
 def nextState(gameState):
     n = len(gameState[0])
     posPlayer = PosOfPlayer(gameState)
@@ -247,7 +226,6 @@ def sim_annealing0(initial_state, max_moves, p=1):
     # Note that I'm only renaming the initial state:
     state = initial_state
     while not solved(state):
-        decreaseFactor = 0.99
         stuckCount = 0
         temperature = max_moves
         oldE = energy(state)
@@ -298,10 +276,11 @@ def sim_annealing0(initial_state, max_moves, p=1):
 
     print(state)
 
-def sim_annealing(initial_state, max_moves, p=1):
+
+def sim_annealing_lucky(initial_state, max_moves, p=1):
     print("Starting from:")
     print(initial_state)
-    # Note that I'm only renaming the initial state:
+    # rename the initial state:
     state = initial_state
     temperature = max_moves
     oldE = energy(state)
@@ -333,14 +312,14 @@ def sim_annealing(initial_state, max_moves, p=1):
         print(state)
 
 
-def sim_annealing2(initial_state, intial_temperature, p=1):
+def sim_annealing(initial_state, intial_temperature, p=1):
     print("Starting from:")
     print(initial_state)
     # rename the initial state:
     state = initial_state
     temperature = intial_temperature
-    oldE = energy(state)
     while not solved(state) and temperature > 0:
+        oldE = energy(state)
         moves = all_moves(state)
         accepted = False
         stuckCount = 0
@@ -368,19 +347,21 @@ def sim_annealing2(initial_state, intial_temperature, p=1):
             if not accepted:
                 undo_move(state, m)
 
-        oldE = newE
         temperature = temperature - 1
         if temperature <= 0:
             temperature += 2
         print("Moving", m)
         print(state)
+        print(energy(state))
 
-def make_move(state, temperature, p):
-    oldE = energy(state)
-    moves = all_moves(state)
+
+# make a real valid move on puzzle
+def make_real_move(state, temperature, p):
+    oldE = energy(state)  # Get old energy
+    moves = all_moves(state)  # Explore all moves
     accepted = False
     stuckCount = 0
-    # Make a move
+    # while not accepted the new move -> Loop until accept one!
     while not accepted:
         # avoid stuck
         stuckCount += 1
@@ -392,13 +373,13 @@ def make_move(state, temperature, p):
         # accept move?
         newE = energy(state)
         deltaE = newE - oldE
-        if deltaE <= 0:
+        if deltaE <= 0:  # accept
             accepted = True
         else:
             boltz = math.exp(-float(p * deltaE) / temperature)
             # A random float between 0 and 1:
             r = np.random.uniform(1, 0, 1)
-            if r <= boltz:
+            if r <= boltz:  # accept
                 accepted = True
         # not accept + undo
         if not accepted:
@@ -406,63 +387,166 @@ def make_move(state, temperature, p):
 
     return temperature, m
 
+
+# Simulated annealing 1 with cooling function: temperature = temperature - 1
+def sim_annealing1(initial_state, intial_temperature, p=1):
+    list = []
+    print("Starting from:")
+    print(initial_state)
+    # rename the initial state:
+    state = initial_state
+    temperature = intial_temperature
+
+    # while puzzle is not solved and temperature > 0
+    while not solved(state) and temperature > 0:
+        # Make a real move
+        temperature, m = make_real_move(state, temperature, p)
+        list.append(m)
+
+        # Decrease temperature
+        temperature = temperature - 1
+        # If not solved and temperature <= 0
+        if temperature <= 0:
+            temperature += 2
+        # print("Moving", m)
+        # print(state)
+        # print(energy(state))
+
+    return list
+
+
+# Simulated annealing 2 with cooling function: temperature = temperature * 0.99
+def sim_annealing2(initial_state, intial_temperature, p=1):
+    print("Starting from:")
+    print(initial_state)
+    # rename the initial state:
+    state = initial_state
+    temperature = intial_temperature
+
+    # while puzzle is not solved and temperature > 0
+    while not solved(state) and temperature > 0:
+        # Make a real move
+        temperature, m = make_real_move(state, temperature, p)
+
+        # Decrease temperature
+        temperature = temperature * 0.99
+        # If not solved and temperature <= 0
+        if temperature <= 0:
+            temperature += 2
+        # print("Moving", m)
+        # print(state)
+        # print(energy(state))
+
+
 def sim_annealing3(initial_state, intial_temperature, p=1):
     print("Starting from:")
     print(initial_state)
     # rename the initial state:
     state = initial_state
-    temperature = intial_temperature
+    maxTemperature = intial_temperature  # max temperature to decrease
+    temperature = random.uniform(0, 1) * maxTemperature  # always < maxTemperature
+
     while not solved(state) and temperature > 0:
+        oldE = energy(state)  # Get old energy
+        moves = all_moves(state)  # Explore all moves
+        accepted = False
+        stuckCount = 0
         # Make a move
-        temperature, m = make_move(state, temperature, p)
+        while not accepted:
+            # avoid stuck
+            stuckCount += 1
+            if stuckCount >= 5:
+                temperature += 2
+            # move randomly
+            m = random.choice(moves)
+            do_move(state, m)
+            # accept move?
+            newE = energy(state)
+            deltaE = newE - oldE
+            if deltaE <= 0:  # accept
+                accepted = True
+            else:
+                boltz = math.exp(-float(p * deltaE) / temperature)
+                # A random float between 0 and 1:
+                r = np.random.uniform(1, 0, 1)
+                if r <= boltz:  # accept
+                    accepted = True
+            # not accept + undo
+            if not accepted:
+                undo_move(state, m)
 
-        temperature = temperature - 1
-        if temperature <= 0:
-            temperature += 2
-        #print("Moving", m)
-        #print(state)
-        #print(energy(state))
+        # Decrease max temperature
+        maxTemperature = maxTemperature - 1
+        if maxTemperature <= 0:
+            maxTemperature += 2
+        # Calculate real temperature
+        temperature = random.uniform(0, 1) * maxTemperature  # always < maxTemperature
 
-def sim_annealing4(initial_state, intial_temperature, p=1):
-    print("Starting from:")
-    print(initial_state)
-    # rename the initial state:
-    state = initial_state
-    temperature = intial_temperature
-    while not solved(state) and temperature > 0:
-        # Make a move
-        temperature, m = make_move(state, temperature, p)
+        # print("Moving", m)
+        # print(state)
+        # print(energy(state))
 
-        temperature = temperature * 0.99
-        if temperature <= 0:
-            temperature += 2
-        #print("Moving", m)
-        #print(state)
-        #print(energy(state))
+
+top = tk.Tk()
+top.title('xep hinhf')
+
+
+def show(gameState):
+    n = len(gameState[0])
+    b = gameState.reshape(n * n)
+    showgamestate = []
+    for x in range(n * n):
+        if b[x] != 0:
+            value = b[x]
+        else:
+            value = ""
+        a0 = tk.Button(text=value, font=("Helvetica", 20,), height=3, width=7)
+        showgamestate.append(a0)
+    for x in range(n * n):
+        x1, y1 = indexshow(x, n)
+        showgamestate[x].grid(row=x1, column=y1)
+
+
+def task():
+    if len(move) != 0:
+        UpdateShowState(gameState1, move[0])
+        del move[0]
+        show(gameState1)
+        time.sleep(0.1)
+        top.after(100, task)
 
 
 # test1 = [1, 2, 3, 4, 5, 6, 7, 10, 12, 0, 8, 15, 14, 11, 9, 13]
 # gameState1=Custominput(test1,4)
 
 # test2 = [4, 6, 5, 7, 2, 0, 1, 3, 8]
-test2 = [1, 2, 3, 4, 5, 6, 7, 8, 0]
-gameState1 = Custominput(test2, 3)
-proper_shuffle(gameState1, 10)
+test = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+gameState1 = Custominput(test, 3)
+proper_shuffle(gameState1, 20)
 gameState2 = copy.deepcopy(gameState1)
+gameState3 = copy.deepcopy(gameState1)
 
 print(gameState1)
-print(heuristic(gameState1))
 # print(PosOfPlayer(gameState1))
-# print(energy(gameState1))
+print(energy(gameState1))
 show(gameState1)
 
+temperature = 100
+p = 1
+
+start = time.time()  # start time
+sim_annealing1(gameState1, temperature, p)
+end = time.time()  # end time
+print(end - start)
+
 start = time.time()
-sim_annealing3(gameState1, 100, 0.01)
+sim_annealing2(gameState2, temperature, p)
 end = time.time()
 print(end - start)
 
 start = time.time()
-sim_annealing4(gameState2, 100, 0.01)
+sim_annealing3(gameState3, temperature, p)
 end = time.time()
 print(end - start)
+
 top.mainloop()

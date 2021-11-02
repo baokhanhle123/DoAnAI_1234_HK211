@@ -238,13 +238,15 @@ test1 = [1, 2, 3, 4, 5, 6, 7, 10, 12, 0, 8, 15, 14, 11, 9, 13]
 # gameState1=Custominput(test1,4)
 
 
-test2 = [0, 2, 1, 7, 4, 5, 6, 3, 8]
+test2 = [1, 2, 3, 4, 5, 6, 7, 0, 8]
 gameState1 = Custominput(test2, 3)
 
 print(gameState1)
 
 move = astar(gameState1)
 del move[0]
+print(move)
+move = ['l', 'r', 'l', 'u', 'd', 'r', 'l', 'r', 'l', 'r', 'u', 'd', 'r']
 show(gameState1)
 top.after(100, task)
 top.mainloop()
