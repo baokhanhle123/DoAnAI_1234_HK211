@@ -87,9 +87,9 @@ def hillclimbing(state):
     queue = []
     goal_state = make_goal_state(state)
     original_state = neighbor_state(state)
-    bool = []
-    for i in range(len(original_state)):
-        bool.append(0)
+    #bool = []
+    #for i in range(len(original_state)):
+        #bool.append(0)
     state1 = np.array(state)
     queue.append(state1)
     while True:
@@ -102,7 +102,7 @@ def hillclimbing(state):
                 array.append(heuristic(neighbor[i]) + heuristic2(neighbor[i]))
             if (min(array) <= heuristic(state) + heuristic2(neighbor[i])):
                 state = neighbor[array.index(min(array))]
-                bool[array.index(min(array))] = 1
+                #bool[array.index(min(array))] = 1
                 tmp = np.array(state)
                 queue.append(tmp)
             else:
