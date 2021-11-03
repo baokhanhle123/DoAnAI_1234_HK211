@@ -19,15 +19,6 @@ class PriorityQueue:                    #hang doi uu tien hien thuc bang haepq
         self.count -=1
         return heapq.heappop(self._data)[-1]
 
-def randominput(n):
-    test=[]
-    for x in range(n*n):            # tao chuoi tu 0 den n^2-1
-        test.append(x)
-
-    random.shuffle(test)    
-
-    return np.array(test).reshape(n,n)   
-
 def Custominput(test,n):
     return np.array(test).reshape(n,n)
 
@@ -209,11 +200,11 @@ def task():
 
 
 test1=[1,6,2,14,7,10,4,3,5,0,13,8,9,15,11,12]
-gameState1=Custominput(test1,4)
+#gameState1=Custominput(test1,4)
 
 
 test1=[2,4,8,3,6,1,7,5,0]
-#gameState1=Custominput(test1,3)
+gameState1=Custominput(test1,3)
 
 
 show(gameState1)
